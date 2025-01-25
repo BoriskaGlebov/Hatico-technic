@@ -27,6 +27,7 @@ class Settings(BaseSettings):
         DB_PORT (int): Порт базы данных.
         DB_NAME (str): Имя основной базы данных.
         PYTHONPATH (str): Путь к Python.
+        IMEICHECK_TOKEN (str): Токен для доступа к сервису
 
     Методы:
         get_db_url() -> str: Возвращает URL для основной базы данных.
@@ -40,8 +41,9 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
+    IMEICHECK_TOKEN: SecretStr
 
-    PYTHONPATH: str
+    PYTHONPATH: SecretStr
 
     model_config = SettingsConfigDict(extra="ignore")
 

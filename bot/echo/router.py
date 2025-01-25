@@ -1,42 +1,23 @@
-from aiogram.filters import CommandObject, CommandStart
+from aiogram import F
 from loguru import logger
 from aiogram.types import Message
 from aiogram.dispatcher.router import Router
 
-from bot.database import connection
-from bot.users.dao import UserDAO
-from bot.users.schemas import TelegramIDModel, UserModel
-from bot.users.utils import get_refer_id_or_none
-
+# Создаем роутер для обработки сообщений
 echo_router = Router()
 
 
-@echo_router.message(CommandStart())
-@connection()
-async def cmd_start(message: Message, command: CommandObject, session, **kwargs):
+@echo_router.message(F.text)
+async def cmd_start(message: Message) -> None:
+    """
+    Обрабатывает текстовые сообщения от пользователя.
+
+    :param message: Объект сообщения от пользователя.
+    """
     try:
-        user_id = message.from_user.id
-        user_info = await UserDAO.find_one_or_none(session=session,
-                                                   filters=TelegramIDModel(telegram_id=user_id))
-
-        if user_info:
-            await message.answer(f"👋 Привет, {message.from_user.full_name}! Выберите необходимое действие")
-            return
-
-        # Определение реферального ID
-        ref_id = get_refer_id_or_none(command_args=command.args, user_id=user_id)
-        values = UserModel(telegram_id=user_id,
-                           username=message.from_user.username,
-                           first_name=message.from_user.first_name,
-                           last_name=message.from_user.last_name,
-                           referral_id=ref_id)
-        await UserDAO.add(session=session, values=values)
-        # Формирование сообщения
-        ref_message = f" Вы успешно закреплены за пользователем с ID {ref_id}" if ref_id else ""
-        msg = f"🎉 <b>Благодарим за регистрацию!{ref_message}</b>."
-
-        await message.answer(msg)
-
+        # Отправляем ответ пользователю
+        await message.reply("Необходимо выбрать команду для начала работы")
     except Exception as e:
-        logger.error(f"Ошибка при выполнении команды /start для пользователя {message.from_user.id}: {e}")
+        # Логируем ошибку, если что-то пошло не так
+        logger.error(f"Ошибка при обработке сообщения от пользователя {message.from_user.id}: {e}")
         await message.answer("Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте снова позже.")
