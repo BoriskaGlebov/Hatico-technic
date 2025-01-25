@@ -1,0 +1,69 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Убедитесь, что у вас есть Dockerfile в корне проекта
+    container_name: my_telegram_bot
+    restart: always
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - API_KEY=${API_KEY}  # Добавьте здесь ваш API ключ для бота, если нужно
+    depends_on:
+      - db
+    networks:
+      - monitoring_net
+  #
+  db:
+    image: postgres:16
+    container_name: hatico_db
+    restart: always
+    env_file:
+      - .env  # Используем переменную окружения для выбора файла .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      #      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_DB},${POSTGRES_DB3}
+      POSTGRES_DB: ${DB_NAME}
+      TZ: Europe/Moscow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      #      - ./pg_logs/:/var/lib/postgresql/logs # Подключение папки для логов,в будущем можно подключить в хранилище докера
+      #для нормального просмотра содержимого логов нужно  sudo chown 999:999 -R pg_logs/ && sudo сhmod -R 777 pg_logs/
+    #      - ./postgresql.conf:/etc/postgresql/postgresql.conf # Подключение конфигурационного файла
+    #    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    #    command: >
+    #      sh -c "
+    #        docker-entrypoint.sh postgres &
+    #        until pg_isready -U ${DB_USER}; do sleep 1; done;
+    #        psql -U ${DB_USER} -d ${DB_NAME} -c 'CREATE DATABASE test_kill_twitter;'
+    #        wait"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          memory: 256M
+    networks:
+      - monitoring_net
+
+
+
+
+volumes:
+  pg_data:
+    name: diploma_db
+
+networks:
+  monitoring_net:
+    name: monitoring_net
+#    external: true
